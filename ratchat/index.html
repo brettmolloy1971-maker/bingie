@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tony the Rat Chat</title>
+    <style>
+        body {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #d4d0c8; /* Windows 98 Gray */
+            margin: 20px;
+        }
+        #chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border: 3px inset #fff;
+            padding: 10px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        }
+        h2 {
+            background: linear-gradient(to right, #800000, #ff4500); /* Gritty red/orange gradient */
+            color: white;
+            margin: -10px -10px 10px -10px;
+            padding: 5px;
+            font-size: 16px;
+        }
+        #chat-box {
+            height: 300px;
+            border: 2px inset #aaa;
+            overflow-y: scroll;
+            padding: 10px;
+            background: #fff;
+            margin-bottom: 10px;
+        }
+        .system {
+            color: #008000; /* Green text for system events */
+            font-style: italic;
+        }
+        .username {
+            font-weight: bold;
+            color: #b22222;
+        }
+        #input-area {
+            display: flex;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 5px;
+            border: 2px inset #aaa;
+        }
+        button {
+            padding: 5px 15px;
+            background: #d4d0c8;
+            border: 2px outset #fff;
+            cursor: pointer;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+        button:active {
+            border: 2px inset #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <h2>🐀 Tony the Rat Chat - Main Sewer Lobby 🐀</h2>
+    <div id="chat-box"></div>
+    
+    <form id="chat-form" action="">
+        <div id="input-area">
+            <input id="message-input" autocomplete="off" placeholder="Squeak your message here..." required />
+            <button type="submit">Send</button>
+        </div>
+    </form>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const chatBox = document.getElementById('chat-box');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('message-input');
+    
+    let myScreenName = "";
+
+    socket.on('assigned-name', (name) => {
+        myScreenName = name;
+    });
+
+    socket.on('system-message', (msg) => {
+        const item = document.createElement('div');
+        item.classList.add('system');
+        item.textContent = `*** ${msg}`;
+        chatBox.appendChild(item);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    socket.on('chat-message', (data) => {
+        const item = document.createElement('div');
+        item.innerHTML = `<span class="username">${data.user}:</span> ${data.text}`;
+        chatBox.appendChild(item);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input.value) {
+            socket.emit('chat-message', {
+                user: myScreenName,
+                text: input.value
+            });
+            input.value = '';
+        }
+    });
+</script>
+</body>
+</html>
