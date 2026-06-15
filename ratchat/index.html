@@ -76,19 +76,31 @@
     </form>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
-    const socket = io();
+    // OPTIONAL STEP: Replace the empty io() with your Render backend URL later 
+    // e.g., const socket = io("https://tony-the-rat-chat-backend.onrender.com");
+    const socket = io(); 
+    
     const chatBox = document.getElementById('chat-box');
     const form = document.getElementById('chat-form');
     const input = document.getElementById('message-input');
     
-    let myScreenName = "";
+    // Default fallback name if backend is not yet connected
+    let myScreenName = `Rat_${Math.floor(100 + Math.random() * 900)}`;
 
+    // Fake an initial welcome message so the room looks active on load
+    const welcomeItem = document.createElement('div');
+    welcomeItem.classList.add('system');
+    welcomeItem.textContent = `*** Welcome to Tony the Rat Chat! Squeak responsibly. (Assigned: ${myScreenName})`;
+    chatBox.appendChild(welcomeItem);
+
+    // Listen for live backend server-assigned screen name
     socket.on('assigned-name', (name) => {
         myScreenName = name;
     });
 
+    // Listen for live backend system messages (joins/leaves)
     socket.on('system-message', (msg) => {
         const item = document.createElement('div');
         item.classList.add('system');
@@ -97,6 +109,7 @@
         chatBox.scrollTop = chatBox.scrollHeight;
     });
 
+    // Listen for live backend chat messages
     socket.on('chat-message', (data) => {
         const item = document.createElement('div');
         item.innerHTML = `<span class="username">${data.user}:</span> ${data.text}`;
@@ -104,14 +117,29 @@
         chatBox.scrollTop = chatBox.scrollHeight;
     });
 
+    // Handle form submission
     form.addEventListener('submit', (e) => {
-        e.preventDefault();
+        e.preventDefault(); // CRITICAL: Stops the page from refreshing and losing your text!
+        
         if (input.value) {
-            socket.emit('chat-message', {
+            const messageData = {
                 user: myScreenName,
                 text: input.value
-            });
-            input.value = '';
+            };
+
+            // If a real backend server is running and connected, send it out via websockets
+            if (socket && socket.connected) {
+                socket.emit('chat-message', messageData);
+            } else {
+                // FALLBACK: If backend isn't live yet, print it straight to your screen 
+                // so your messages don't disappear and you can test the layout!
+                const item = document.createElement('div');
+                item.innerHTML = `<span class="username">${messageData.user}:</span> ${messageData.text}`;
+                chatBox.appendChild(item);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
+            input.value = ''; // Cleanly wipes the input box text for the next message
         }
     });
 </script>
